@@ -22,12 +22,30 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stdbool.h"
+#include "stdio.h"
+#include "stm32f1xx_hal.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+bool flag1; // флаги для моргалки
+bool flag2; // флаги для дисплея
+unsigned long t1, t2, t3; // для отсчета времени
+uint8_t tx_buffer1[] = "SAY_Diesel engine\n\r"; // создаем буфер с текстом
+uint8_t tx_buffer2[] = "Varable:\n\r"; // создаем буфер с текстом
+uint8_t tx_buffer3[] = "\n\r"; // создаем буфер с текстом
+uint8_t msg1[64];  // буффер для числа
+uint8_t msg2[64];  // буффер для числа
+uint8_t msg3[64];  // буффер для числа
+uint8_t msg4[64];  // буффер для числа
+uint8_t msg5[64];  // буффер для числа
+float x2 = 33.12;// число
+uint32_t adc_val[4];
+int adc_val1;
+int adc_val2;
+int adc_val3;
+int adc_val4;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -64,6 +82,36 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void Huart(){
+	 if(HAL_GetTick() - t2 >=1000) {
+		 t2 = HAL_GetTick();
+	     HAL_UART_Transmit(&huart1, tx_buffer1, sizeof tx_buffer1/sizeof tx_buffer1[0], 0xFFFF);
+	     HAL_UART_Transmit(&huart1, tx_buffer2, sizeof tx_buffer2/sizeof tx_buffer2[0], 0xFFFF);
+	     HAL_UART_Transmit(&huart1, msg1, sprintf((char *)msg1, "Rotation speed reference = %d\n\r", adc_val1), 0xFFFF);
+	     HAL_UART_Transmit(&huart1, msg2, sprintf((char *)msg2, "PID_Kp = %d", adc_val2), 0xFFFF);
+	     HAL_UART_Transmit(&huart1, msg4, sprintf((char *)msg4, "   PID_Kd = %d", adc_val3), 0xFFFF);
+	     HAL_UART_Transmit(&huart1, msg5, sprintf((char *)msg5, "   PID_Ki = %d\n\r", adc_val4), 0xFFFF);
+	     //HAL_UART_Transmit(&huart1, msg3, sprintf((char *)msg3, " Varable_3 = %.2f\n\r", x2), 0xFFFF);
+	     HAL_UART_Transmit(&huart1, tx_buffer3, sizeof tx_buffer3/sizeof tx_buffer3[0], 0xFFFF);
+	 }
+}
+
+void Blink(){
+	 if (flag1 == 1) {
+		 if (HAL_GetTick() - t1 >= 2000) {
+			 flag1 = 0;
+			 t1 = HAL_GetTick();
+		 }
+	 }
+	 if (flag1 == 0) {
+	 		 if (HAL_GetTick() - t1 >= 300) {
+	 		flag1 = 1;
+	 		t1 = HAL_GetTick();
+	 		 }
+	 	HAL_GPIO_WritePin(GPIOC, DO1_Pin, flag1);
+	 	 }
+
+ }
 
 /* USER CODE END 0 */
 
@@ -74,7 +122,7 @@ static void MX_USART1_UART_Init(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	char str[100];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -83,7 +131,11 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+	t1 = HAL_GetTick(); // для моргалки
+	t2 = HAL_GetTick(); // для юарта
+	t3 = HAL_GetTick(); // для дисплея
+	flag1 = 1;
+	flag2 = 1;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -100,7 +152,24 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_ADCEx_Calibration_Start(&hadc1);  // калибровка ацп при включении
 
+  LCD_ini();
+  sprintf(str,"DESIGN");
+  LCD_SetPos(6, 0);
+  LCD_String(str);
+  HAL_Delay(700);
+
+  sprintf(str,"BY");
+  LCD_SetPos(8, 1);
+  LCD_String(str);
+  HAL_Delay(700);
+
+  sprintf(str,"MEXANICBIRD");
+  LCD_SetPos(4, 2);
+  LCD_String(str);
+  HAL_Delay(3000);
+  LCD_Clear();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,6 +179,56 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  HAL_ADC_Start_DMA(&hadc1, adc_val, 4); // запуск преобразования сигнала
+	  adc_val1 = adc_val[0] / 1.46;
+	  adc_val2 = adc_val[1] / 40;
+	  adc_val3 = adc_val[2] / 135;
+	  adc_val4 = adc_val[3] / 135;
+	  Blink(); // вызываем моргалку
+	  Huart(); // вызываем передачу в порт
+	  sprintf(str,"System VAL&SET ");
+	  LCD_SetPos(3, 0);
+	  LCD_String(str);
+
+	  sprintf(str,"Z = %d", adc_val1);
+	  LCD_SetPos(0, 1);
+	  LCD_String(str);
+
+	  sprintf(str,"S = %d", adc_val1);
+	  LCD_SetPos(11, 1);
+	  LCD_String(str);
+
+	  sprintf(str,"Kp = %d", adc_val2);
+	  LCD_SetPos(0, 2);
+	  LCD_String(str);
+
+	  sprintf(str,"Ki = %d", adc_val3);
+	  LCD_SetPos(11, 2);
+	  LCD_String(str);
+
+	  sprintf(str,"Kd = %d", adc_val4);
+	  LCD_SetPos(0, 3);
+	  LCD_String(str);
+
+	  sprintf(str,"D = 100");
+	  LCD_SetPos(11, 3);
+	  LCD_String(str);
+
+
+	  if (flag2 == 1) {
+		if (HAL_GetTick() - t3 >= 1300) {
+			flag2 = 0;
+			t3 = HAL_GetTick();
+		}
+	}
+	  if (flag2 == 0) {
+		 if (HAL_GetTick() - t3 >= 1) {
+		   flag2 = 1;
+		   t3 = HAL_GetTick();
+		 	}
+		  LCD_Clear();
+
+	}	  
   }
   /* USER CODE END 3 */
 }
