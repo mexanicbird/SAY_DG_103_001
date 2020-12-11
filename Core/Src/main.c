@@ -29,23 +29,25 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-bool flag1; // флаги для моргалки
-bool flag2; // флаги для дисплея
-unsigned long t1, t2, t3; // для отсчета времени
-uint8_t tx_buffer1[] = "SAY_Diesel engine\n\r"; // создаем буфер с текстом
-uint8_t tx_buffer2[] = "Varable:\n\r"; // создаем буфер с текстом
-uint8_t tx_buffer3[] = "\n\r"; // создаем буфер с текстом
-uint8_t msg1[64];  // буффер для числа
-uint8_t msg2[64];  // буффер для числа
-uint8_t msg3[64];  // буффер для числа
-uint8_t msg4[64];  // буффер для числа
-uint8_t msg5[64];  // буффер для числа
-float x2 = 33.12;// число
+bool flag1; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+bool flag2; // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+unsigned long t1, t2, t3; // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+uint8_t tx_buffer1[] = "SAY_Diesel engine\n\r"; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+uint8_t tx_buffer2[] = "Varable:\n\r"; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+uint8_t tx_buffer3[] = "\n\r"; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+uint8_t msg1[64];  // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+uint8_t msg2[64];  // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+uint8_t msg3[64];  // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+uint8_t msg4[64];  // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+uint8_t msg5[64];  // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+float x2 = 33.12;// пїЅпїЅпїЅпїЅпїЅ
 uint32_t adc_val[4];
 int adc_val1;
 int adc_val2;
 int adc_val3;
 int adc_val4;
+uint8_t rx_buffer[4];
+int rx_buffer_int = 0;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -64,6 +66,8 @@ DMA_HandleTypeDef hdma_adc1;
 I2C_HandleTypeDef hi2c1;
 
 UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -82,6 +86,10 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	//HAL_UART_Transmit_DMA(&huart1, rx_buffer, 10); // РѕС‚РїСЂР°РІРєР° РѕР±СЂР°С‚РЅРѕ РґР»СЏ РїСЂРѕРІРµСЂРєРё
+	HAL_UART_Receive_IT(&huart1, rx_buffer, 4);
+}
 void Huart(){
 	 if(HAL_GetTick() - t2 >=1000) {
 		 t2 = HAL_GetTick();
@@ -131,9 +139,9 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-	t1 = HAL_GetTick(); // для моргалки
-	t2 = HAL_GetTick(); // для юарта
-	t3 = HAL_GetTick(); // для дисплея
+	t1 = HAL_GetTick(); // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+	t2 = HAL_GetTick(); // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+	t3 = HAL_GetTick(); // пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	flag1 = 1;
 	flag2 = 1;
   /* USER CODE END Init */
@@ -152,7 +160,8 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  HAL_ADCEx_Calibration_Start(&hadc1);  // калибровка ацп при включении
+  HAL_UART_Receive_IT(&huart1, rx_buffer, 4);
+  HAL_ADCEx_Calibration_Start(&hadc1);  // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
   LCD_ini();
   sprintf(str,"DESIGN");
@@ -179,13 +188,20 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  HAL_ADC_Start_DMA(&hadc1, adc_val, 4); // запуск преобразования сигнала
+	  // РѕРїСЂР°С€РёРІР°РµРј СЂРµР·РёСЃС‚РѕСЂС‹ //
+	  HAL_ADC_Start_DMA(&hadc1, adc_val, 4); // Р·Р°РїСѓСЃРє РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ СЃРёРіРЅР°Р»Р°
 	  adc_val1 = adc_val[0] / 1.46;
 	  adc_val2 = adc_val[1] / 40;
 	  adc_val3 = adc_val[2] / 135;
 	  adc_val4 = adc_val[3] / 135;
-	  Blink(); // вызываем моргалку
-	  Huart(); // вызываем передачу в порт
+
+
+	  rx_buffer_int = rx_buffer[0]*1000 + rx_buffer[1]*100 + rx_buffer[2]*10 + rx_buffer[3];
+
+	  Blink(); // РІС‹Р·С‹РІР°РµРј РјРѕСЂРіР°Р»РєСѓ
+	  //Huart(); // РІС‹Р·С‹РІР°РµРј РїРµСЂРµРґР°С‡Сѓ РІ РїРѕСЂС‚
+
+
 	  sprintf(str,"System VAL&SET ");
 	  LCD_SetPos(3, 0);
 	  LCD_String(str);
@@ -194,7 +210,7 @@ int main(void)
 	  LCD_SetPos(0, 1);
 	  LCD_String(str);
 
-	  sprintf(str,"S = %d", adc_val1);
+	  sprintf(str,"S = %d", rx_buffer_int);
 	  LCD_SetPos(11, 1);
 	  LCD_String(str);
 
@@ -427,6 +443,12 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+  /* DMA1_Channel5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
 }
 
