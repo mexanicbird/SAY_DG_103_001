@@ -46,7 +46,6 @@ int adc_val1;
 int adc_val2;
 int adc_val3;
 int adc_val4;
-uint8_t rx_buffer[4];
 int rx_buffer_int = 0;
 /* USER CODE END PTD */
 
@@ -86,10 +85,11 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+
+//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	//HAL_UART_Transmit_DMA(&huart1, rx_buffer, 10); // отправка обратно для проверки
-	HAL_UART_Receive_IT(&huart1, rx_buffer, 4);
-}
+	//HAL_UART_Receive_IT(&huart1, rx_buffer, 4);
+//}
 void Huart(){
 	 if(HAL_GetTick() - t2 >=1000) {
 		 t2 = HAL_GetTick();
@@ -131,6 +131,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 	char str[100];
+	uint8_t rx_buffer[5]={0};
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -195,8 +196,12 @@ int main(void)
 	  adc_val3 = adc_val[2] / 135;
 	  adc_val4 = adc_val[3] / 135;
 
+	  //if(huart1.RxXferCount==0){
+		  rx_buffer[4]=0;
+		  HAL_UART_Receive_IT(&huart1, rx_buffer, 4);
+	 // }
 
-	  rx_buffer_int = rx_buffer[0]*1000 + rx_buffer[1]*100 + rx_buffer[2]*10 + rx_buffer[3];
+	  //rx_buffer_int = rx_buffer[0]*1000 + rx_buffer[1]*100 + rx_buffer[2]*10 + rx_buffer[3];
 
 	  Blink(); // вызываем моргалку
 	  //Huart(); // вызываем передачу в порт
@@ -210,7 +215,7 @@ int main(void)
 	  LCD_SetPos(0, 1);
 	  LCD_String(str);
 
-	  sprintf(str,"S = %d", rx_buffer_int);
+	  sprintf(str,"S = %s", rx_buffer);
 	  LCD_SetPos(11, 1);
 	  LCD_String(str);
 
